@@ -11,7 +11,7 @@
         public int Puerto { get; set; }
         public DateTime Heartbeat { get; set; }
 
-        public Recurso Recurso { get; set; }
+        public Recurso? Recurso { get; set; }
     }
 
 }

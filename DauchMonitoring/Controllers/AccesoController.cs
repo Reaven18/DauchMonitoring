@@ -19,7 +19,7 @@ namespace DauchMonitoring.Controllers
         {
             _appDBContext = appDBContext;
             _utilities = utilities;
-            
+
         }
 
         [HttpPost]
@@ -37,8 +37,22 @@ namespace DauchMonitoring.Controllers
             if (modeloUsuario.Id != 0)
                 return StatusCode(StatusCodes.Status200OK, new { isSuccess = true });
             else
-                return StatusCode(StatusCodes.Status400BadRequest, new { isSuccess = false });
-            
+                return BadRequest("Error al registrar el usuario");
+        }
+
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> Login(UsuarioDTO user)
+        {
+            var modeloUsuario = await _appDBContext.Usuarios.FirstOrDefaultAsync(u => u.Correo == user.Correo);
+            if (modeloUsuario == null)
+                return NotFound("Usuario no encontrado");
+            var passwordHash = _utilities.encryptSHA256(user.password);
+            if (modeloUsuario.PasswordHash != passwordHash)
+                return Unauthorized("Contraseña incorrecta");
+            var token = _utilities.generarJWT(modeloUsuario);
+            return Ok(new { token });
+
         }
     }
 }

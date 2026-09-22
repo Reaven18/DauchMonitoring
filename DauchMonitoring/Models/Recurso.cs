@@ -10,10 +10,10 @@ namespace DauchMonitoring.Models
         public int IdEstado { get; set; }
         public int IdArea { get; set; }
 
-        public Estado Estado { get; set; }
-        public Area Area { get; set; }
+        public Estado? Estado { get; set; }
+        public Area? Area { get; set; }
 
-        public Equipo Equipo { get; set; }
-        public Aplicacion Aplicacion { get; set; }
+        public Equipo? Equipo { get; set; }
+        public Aplicacion? Aplicacion { get; set; }
     }
 }

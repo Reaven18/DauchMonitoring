@@ -2,9 +2,9 @@
 
 namespace DauchMonitoring.Models.DTOs
 {
-    public class PlantaDTO
-    {
-        [Required]                
+    public class AreaPatchDTO
+    {        
         public string? Nombre { get; set; }        
+        public int? IdPlanta { get; set; }
     }
 }

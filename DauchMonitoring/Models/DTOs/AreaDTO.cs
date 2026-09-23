@@ -1,11 +1,13 @@
-﻿namespace DauchMonitoring.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace DauchMonitoring.Models.DTOs
 {
     public class AreaDTO
     {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public int IdPlanta { get; set; }
-        public PlantaDTO Planta { get; set; }
-        public List<RecursoDTO> Recursos { get; set; }
+        [Required]
+        public string? Nombre { get; set; }
+        
+        [Range(1, int.MaxValue)]
+        public int IdPlanta { get; set; }        
     }
 }

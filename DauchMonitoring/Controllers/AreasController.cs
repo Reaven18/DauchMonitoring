@@ -16,49 +16,28 @@ public class AreasController : ControllerBase
 
     // GET: api/Area
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AreaDTO>>> GetArea()
+    public async Task<ActionResult<IEnumerable<AreaResponseDTO>>> GetArea()
     {
         var areas = await _context.Areas
             .Include(p => p.Planta)
-            .Select(a => new AreaDTO
-            {
-                Id = a.Id,
-                Nombre = a.Nombre,
-                IdPlanta = a.IdPlanta,
-                Planta = new PlantaDTO
-                {
-                    Id = a.Planta.Id,
-                    Nombre = a.Planta.Nombre
-                },                
-            }).ToListAsync();
+            .Select(a => NuevaArea(a)).ToListAsync();
 
         return Ok(areas);
     }
 
     // GET: api/Area/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<AreaDTO>> GetArea(int id)
+    public async Task<ActionResult<AreaResponseDTO>> GetArea(int id)
     {        
         var area = await _context.Areas
             .Where(a => a.Id == id)
             .Include(p => p.Planta)
-            .Select(a => new AreaDTO
-            {
-                Id = a.Id,
-                Nombre = a.Nombre,
-                IdPlanta = a.IdPlanta,
-                Planta = new PlantaDTO
-                {
-                    Id = a.Planta.Id,
-                    Nombre = a.Planta.Nombre
-                },
-                Recursos = a.Recursos.Select(r => new RecursoDTO
-                {
-                    Id = r.Id,
-                    Nombre = r.Nombre,
-                    IdArea = r.IdArea
-                }).ToList()
-            }).FirstOrDefaultAsync();
+            .Include(r => r.Recursos)
+            .Select(a => NuevaArea(a))
+            .FirstOrDefaultAsync();
+
+        if (area == null)        
+            return NotFound();        
 
         return Ok(area);
     }
@@ -67,56 +46,90 @@ public class AreasController : ControllerBase
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> PutArea(int? id, Area area)
+    public async Task<IActionResult> PutArea(int id, AreaDTO areaDTO)
     {
-        if (id != area.Id)
+        var area = await _context.Areas.FindAsync(id);
+        if (area == null)
+            return NotFound();
+        
+        
+        if (!await PlantaExist(areaDTO.IdPlanta))
+            return NotFound("La planta no existe");
+        else
+            area.IdPlanta = (int)areaDTO.IdPlanta;        
+        if(await AreaExists(areaDTO.Nombre, area.IdPlanta, area.Id))
+            return Conflict("Ya existe un área con el mismo nombre en esa planta");     
+        else
+            area.Nombre = areaDTO.Nombre;       
+        
+        try
         {
-            return BadRequest();
+            await _context.SaveChangesAsync();
+            return Ok(area);
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest("Error al actualizar el área");
         }        
-        if (_context.Areas.Any(p => p.IdPlanta == area.IdPlanta && p.Nombre == area.Nombre))
-            return BadRequest("Ya existe un área con el mismo nombre en esa planta");
-        if (!_context.Plantas.Any(p => p.Id == area.IdPlanta))
-            return BadRequest("La planta no existe");
+    }
 
-        _context.Entry(area).State = EntityState.Modified;
+    // PATCH: api/Area/5
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPatch("{id}")]
+    [Authorize]
+    public async Task<IActionResult> PatchArea(int id, AreaPatchDTO areaDTO)
+    {
+        var area = await _context.Areas.FindAsync(id);
+        if (area == null)
+            return NotFound();
+
+        int idPlanta = areaDTO.IdPlanta ?? area.IdPlanta;
+        string nombre = areaDTO.Nombre ?? area.Nombre;
+
+        if (areaDTO.IdPlanta != null)
+        {
+            if (!await PlantaExist(areaDTO.IdPlanta))
+                return NotFound("La planta no existe");            
+        }
+        
+        if (await AreaExists(nombre, idPlanta, area.Id))
+                return Conflict("Ya existe un área con el mismo nombre en esa planta");                                
+
+        area.IdPlanta = idPlanta;
+        area.Nombre = nombre;
 
         try
         {
             await _context.SaveChangesAsync();
+            return Ok(area);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateException)
         {
-            if (!AreaExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
+            return BadRequest("Error al actualizar el área");
         }
-
-        return NoContent();
     }
 
     // POST: api/Area
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Area>> PostArea(Area area)
+    public async Task<ActionResult<AreaDTO>> PostArea(AreaDTO area)
     {
         try 
         {
-            if(AreaExists(area.Id))            
-                return BadRequest("El área ya existe");            
-            if(_context.Areas.Any(p => p.IdPlanta == area.IdPlanta && p.Nombre == area.Nombre))            
-                return BadRequest("Ya existe un área con el mismo nombre en esa planta");            
-            if(!_context.Plantas.Any(p => p.Id == area.IdPlanta))
-                return BadRequest("La planta no existe");
+            var newArea = new Area
+            {
+                Nombre = area.Nombre,
+                IdPlanta = area.IdPlanta
+            };
+            if (!await PlantaExist(area.IdPlanta))
+                return NotFound("La planta no existe");
+            if (await AreaExists(area.Nombre, area.IdPlanta))            
+                return Conflict("Ya existe un área con el mismo nombre en esa planta"); 
 
-            _context.Areas.Add(area);
+            _context.Areas.Add(newArea);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetArea", new { id = area.Id }, area);
+            return CreatedAtAction(nameof(GetArea), new { id = newArea.Id },area);
 
         } catch (DbUpdateException)       
         {
@@ -127,7 +140,7 @@ public class AreasController : ControllerBase
     // DELETE: api/Area/5
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> DeleteArea(int? id)
+    public async Task<IActionResult> DeleteArea(int id)
     {
         var area = await _context.Areas.FindAsync(id);
         if (area == null)
@@ -140,9 +153,36 @@ public class AreasController : ControllerBase
 
         return NoContent();
     }
-
-    private bool AreaExists(int? id)
+  
+    private async Task<bool> AreaExists(string nombre, int idPlanta, int? IdArea = null)
     {
-        return _context.Areas.Any(e => e.Id == id);
+        return await _context.Areas.AnyAsync(e => e.Nombre == nombre && e.IdPlanta == idPlanta && e.Id != IdArea);
+    }
+
+    private async Task<bool> PlantaExist(int? id)
+    {
+        return await _context.Plantas.AnyAsync(p => p.Id == id);
+    }
+
+    public static AreaResponseDTO NuevaArea(Area a) 
+    {
+        return new AreaResponseDTO
+        {
+            Id = a.Id,
+            Nombre = a.Nombre,
+            IdPlanta = a.IdPlanta,
+            Planta = a.Planta == null ?
+            null : new PlantaDTO
+            {                
+                Nombre = a.Planta.Nombre
+            },
+            Recursos = a.Recursos == null ?
+            null : a.Recursos.Select(r => new RecursoDTO
+            {
+                Id = r.Id,
+                Nombre = r.Nombre,
+                IdArea = r.IdArea
+            }).ToList()
+        };
     }
 }

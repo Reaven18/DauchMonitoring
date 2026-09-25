@@ -1,4 +1,7 @@
-﻿namespace DauchMonitoring.Models.DTOs
+﻿using DauchMonitoring.Models.DTOs.Planta;
+using DauchMonitoring.Models.DTOs.Recurso;
+
+namespace DauchMonitoring.Models.DTOs.Area
 {
     public class AreaResponseDTO : AreaDTO
     {

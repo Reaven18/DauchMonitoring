@@ -1,4 +1,4 @@
-﻿namespace DauchMonitoring.Models.DTOs
+﻿namespace DauchMonitoring.Models.DTOs.Aplicacion
 {
     public class AplicacionDTO
     {        

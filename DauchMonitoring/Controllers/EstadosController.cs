@@ -1,4 +1,5 @@
 using DauchMonitoring.Models;
+using DauchMonitoring.Models.DTOs.Estado;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,89 +16,37 @@ public class EstadosController : ControllerBase
 
     // GET: api/Estado
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Estado>>> GetEstado()
+    public async Task<ActionResult<IEnumerable<EstadoDTO>>> GetEstado()
     {
-        return await _context.Estados.ToListAsync();
+        var estados = await _context.Estados
+            .Select(e => new EstadoDTO
+            {
+                Id = e.Id,
+                Nombre = e.Nombre,
+                Descripcion = e.Descripcion
+            })
+            .ToListAsync();
+
+        return Ok(estados);
     }
 
     // GET: api/Estado/5
     [HttpGet("{id}")]
 
-    public async Task<ActionResult<Estado>> GetEstado(int id)
+    public async Task<ActionResult<EstadoDTO>> GetEstado(int id)
     {
-        var estado = await _context.Estados.FindAsync(id);
+        var estado = await _context.Estados
+           .Select(e => new EstadoDTO
+           {
+               Id = e.Id,
+               Nombre = e.Nombre,
+               Descripcion = e.Descripcion
+           })
+           .FirstOrDefaultAsync(e => e.Id == id);
 
-        if (estado == null)
-        {
-            return NotFound();
-        }
+        if (estado == null)        
+            return NotFound();        
 
-        return estado;
-    }
-
-    // PUT: api/Estado/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    [Authorize]
-    public async Task<IActionResult> PutEstado(int? id, Estado estado)
-    {
-        if (id != estado.Id)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(estado).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!EstadoExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-    }
-
-    // POST: api/Estado
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    [Authorize]
-    public async Task<ActionResult<Estado>> PostEstado(Estado estado)
-    {
-        _context.Estados.Add(estado);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetEstado", new { id = estado.Id }, estado);
-    }
-
-    // DELETE: api/Estado/5
-    [HttpDelete("{id}")]
-    [Authorize]
-    public async Task<IActionResult> DeleteEstado(int? id)
-    {
-        var estado = await _context.Estados.FindAsync(id);
-        if (estado == null)
-        {
-            return NotFound();
-        }
-
-        _context.Estados.Remove(estado);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool EstadoExists(int? id)
-    {
-        return _context.Estados.Any(e => e.Id == id);
+        return Ok(estado);
     }
 }

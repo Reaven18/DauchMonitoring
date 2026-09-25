@@ -2,135 +2,135 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DauchMonitoring.Models;
 using Microsoft.AspNetCore.Authorization;
-using DauchMonitoring.Models.DTOs;
+using DauchMonitoring.Models.DTOs.Planta;
+using DauchMonitoring.Models.DTOs.Area;
 
 [Route("api/[controller]")]
 [ApiController]
 public class PlantasController : ControllerBase
 {
     private readonly AppDBContext _context;
+
     public PlantasController(AppDBContext context)
     {
         _context = context;
     }
 
-    // GET: api/Planta
+    // GET: api/Plantas
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PlantaDTO>>> GetPlanta()
-    {        
-        var plantas = await _context.Plantas            
-            .Select(p => new PlantaDTO
+    public async Task<ActionResult<IEnumerable<PlantaResponseDTO>>> GetPlanta(
+        string? nombre)
+    {
+        var query = _context.Plantas.AsQueryable();
+        if(!string.IsNullOrEmpty(nombre))        
+            query = query.Where(p => p.Nombre.Contains(nombre));
+
+        var plantas = await query
+            .Select(p => new PlantaResponseDTO
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
-                Areas = p.Areas.Select(a => new AreaDTO
+                Areas = p.Areas.Select(a => new AreaPatchDTO
                 {
                     Id = a.Id,
                     Nombre = a.Nombre,
-                    IdPlanta = a.IdPlanta,
+                    IdPlanta = a.IdPlanta
                 }).ToList()
-            }).ToListAsync();
+            })
+            .ToListAsync();
+
         return Ok(plantas);
     }
 
-    // GET: api/Planta/5
+    // GET: api/Plantas/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<PlantaDTO>> GetPlanta(int id)
+    public async Task<ActionResult<PlantaResponseDTO>> GetPlanta(int id)
     {
         var planta = await _context.Plantas
             .Where(p => p.Id == id)
-            .Select(p => new PlantaDTO
+            .Select(p => new PlantaResponseDTO
             {
                 Id = p.Id,
                 Nombre = p.Nombre,
-                Areas = p.Areas.Select(a => new AreaDTO
+                Areas = p.Areas.Select(a => new AreaPatchDTO
                 {
                     Id = a.Id,
                     Nombre = a.Nombre,
-                    IdPlanta = a.IdPlanta,
+                    IdPlanta = a.IdPlanta
                 }).ToList()
-            }).FirstOrDefaultAsync();
+            })
+            .FirstOrDefaultAsync();
 
-        if (planta == null)       
-            return NotFound();        
+        if (planta == null)
+            return NotFound();
 
         return Ok(planta);
     }
 
-    // PUT: api/Planta/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    // PUT: api/Plantas/5
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> PutPlanta(int? id, Planta planta)
+    public async Task<IActionResult> PutPlanta(int id, PlantaDTO plantaDTO)
     {
-        if (id != planta.Id)
-        {
-            return BadRequest();
-        }
+        var planta = await _context.Plantas.FindAsync(id);
 
-        _context.Entry(planta).State = EntityState.Modified;
+        if (planta == null)
+            return NotFound();
+
+        planta.Nombre = plantaDTO.Nombre;
 
         try
         {
             await _context.SaveChangesAsync();
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateException)
         {
-            if (!PlantaExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
+            return BadRequest("Ocurrió un error al actualizar la planta.");
         }
 
-        return NoContent();
+        return Ok(planta);
     }
 
-    // POST: api/Planta
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    // POST: api/Plantas
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Planta>> PostPlanta(Planta planta)
+    public async Task<ActionResult<Planta>> PostPlanta(PlantaDTO plantaDTO)
     {
+        var planta = new Planta
+        {
+            Nombre = plantaDTO.Nombre
+        };
+
         try
         {
-            if(PlantaExists(planta.Id))
-            {
-                return BadRequest("Ya existe una planta con ese ID.");
-            }
             _context.Plantas.Add(planta);
             await _context.SaveChangesAsync();
         }
-        catch (DbUpdateException) 
+        catch (DbUpdateException)
         {
             return BadRequest("Ocurrió un error al guardar la planta.");
         }
 
-        return CreatedAtAction("GetPlanta", new { id = planta.Id }, planta);
+        return CreatedAtAction(
+            nameof(GetPlanta),
+            new { id = planta.Id },
+            planta
+        );
     }
 
-    // DELETE: api/Planta/5
+    // DELETE: api/Plantas/5
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> DeletePlanta(int? id)
+    public async Task<IActionResult> DeletePlanta(int id)
     {
         var planta = await _context.Plantas.FindAsync(id);
+
         if (planta == null)
-        {
             return NotFound();
-        }
 
         _context.Plantas.Remove(planta);
         await _context.SaveChangesAsync();
 
         return NoContent();
-    }
-
-    private bool PlantaExists(int? id)
-    {
-        return _context.Plantas.Any(e => e.Id == id);
     }
 }

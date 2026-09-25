@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DauchMonitoring.Models.DTOs
+namespace DauchMonitoring.Models.DTOs.Planta
 {
     public class PlantaDTO
     {

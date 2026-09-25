@@ -1,5 +1,7 @@
 using DauchMonitoring.Models;
-using DauchMonitoring.Models.DTOs;
+using DauchMonitoring.Models.DTOs.Area;
+using DauchMonitoring.Models.DTOs.Planta;
+using DauchMonitoring.Models.DTOs.Recurso;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +18,37 @@ public class AreasController : ControllerBase
 
     // GET: api/Area
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AreaResponseDTO>>> GetArea()
+    public async Task<ActionResult<IEnumerable<AreaResponseDTO>>> GetArea(
+        int? idPlanta,
+        string? nombre)
     {
-        var areas = await _context.Areas
-            .Include(p => p.Planta)
-            .Select(a => NuevaArea(a)).ToListAsync();
+        var query = _context.Areas.AsQueryable();
+
+        if (idPlanta.HasValue) 
+            query = query.Where(a => a.IdPlanta == idPlanta.Value);
+        if(!string.IsNullOrEmpty(nombre))
+            query = query.Where(a => a.Nombre.StartsWith(nombre));
+
+        var areas = await query            
+            .Select(a => new AreaResponseDTO
+            {
+                Id = a.Id,
+                Nombre = a.Nombre,
+                IdPlanta = a.IdPlanta,
+                Planta = a.Planta == null ?
+                null : new PlantaDTO
+                {
+                    Nombre = a.Planta.Nombre
+                },
+                Recursos = a.Recursos == null ?
+                null : a.Recursos.Select(r => new RecursoDTO
+                {
+                    Id = r.Id,
+                    Nombre = r.Nombre,
+                    IdArea = r.IdArea
+                }).ToList()
+            })
+            .ToListAsync();
 
         return Ok(areas);
     }
@@ -30,10 +58,26 @@ public class AreasController : ControllerBase
     public async Task<ActionResult<AreaResponseDTO>> GetArea(int id)
     {        
         var area = await _context.Areas
-            .Where(a => a.Id == id)
-            .Include(p => p.Planta)
-            .Include(r => r.Recursos)
-            .Select(a => NuevaArea(a))
+            .Where(a => a.Id == id)            
+            .Select(a => new AreaResponseDTO
+            {
+                Id = a.Id,
+                Nombre = a.Nombre,
+                IdPlanta = a.IdPlanta,
+                Planta = a.Planta == null ?
+                null : new PlantaDTO
+                {
+                    Nombre = a.Planta.Nombre
+                },
+                Recursos = a.Recursos == null ?
+                null : a.Recursos.Select(r => new RecursoDTO
+                {
+                    Id = r.Id,
+                    Nombre = r.Nombre,
+                    IdArea = r.IdArea
+                })
+                .ToList()
+                })
             .FirstOrDefaultAsync();
 
         if (area == null)        
@@ -65,7 +109,7 @@ public class AreasController : ControllerBase
         try
         {
             await _context.SaveChangesAsync();
-            return Ok(area);
+            return Ok(NuevaArea(area));
         }
         catch (DbUpdateException)
         {
@@ -101,7 +145,7 @@ public class AreasController : ControllerBase
         try
         {
             await _context.SaveChangesAsync();
-            return Ok(area);
+            return Ok(NuevaArea(area));
         }
         catch (DbUpdateException)
         {
@@ -129,7 +173,7 @@ public class AreasController : ControllerBase
 
             _context.Areas.Add(newArea);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetArea), new { id = newArea.Id },area);
+            return CreatedAtAction(nameof(GetArea),NuevaArea(newArea));
 
         } catch (DbUpdateException)       
         {
@@ -164,25 +208,14 @@ public class AreasController : ControllerBase
         return await _context.Plantas.AnyAsync(p => p.Id == id);
     }
 
-    public static AreaResponseDTO NuevaArea(Area a) 
+    public static AreaPatchDTO NuevaArea(Area a) 
     {
-        return new AreaResponseDTO
+        return new AreaPatchDTO
         {
             Id = a.Id,
             Nombre = a.Nombre,
-            IdPlanta = a.IdPlanta,
-            Planta = a.Planta == null ?
-            null : new PlantaDTO
-            {                
-                Nombre = a.Planta.Nombre
-            },
-            Recursos = a.Recursos == null ?
-            null : a.Recursos.Select(r => new RecursoDTO
-            {
-                Id = r.Id,
-                Nombre = r.Nombre,
-                IdArea = r.IdArea
-            }).ToList()
+            IdPlanta = a.IdPlanta            
         };
     }
+    
 }

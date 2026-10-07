@@ -1,0 +1,28 @@
+﻿<div @bind="FormActive" class="splash-container hide">
+    <div class="splash-form-container">
+        <div class="splash-header">
+            <h2>@Title</h2>
+            <i @onclick="Close" class="material-icons" id="splash-close">close</i>
+        </div>
+        @ChildContent
+        <div class="splash-footer">
+            <button @onclick="Close" class="btn-negro" id="btn-cancelar">Cancelar</button>
+            <button id="btn-submit" class="btn-negro ms-3">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; } = "Nuevo Recurso"; 
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    [Parameter]
+    public EventCallback onClose { get; set; }
+
+    private async Task Close()
+    {
+        await onClose.InvokeAsync();
+    }
+
+}

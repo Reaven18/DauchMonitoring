@@ -1,0 +1,59 @@
+﻿@using MonitoreoDashboard.Models
+@using MonitoreoDashboard.Services
+@inject HttpClient Http
+@inject TokenService token
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@layout LoginLayout
+@page "/login"
+
+
+<PageTitle>Inicio de Sesión</PageTitle>
+<div class="principal-container-login">
+    <div class="login-container">
+        <EditForm id="login-form" Model="Usuario" OnValidSubmit="IniciarSesion">
+            <h1 class="title mb-5">Hola de nuevo</h1>
+            <label id="lbl-email" class="mb-3">Correo:
+                <InputText class="mt-2" type="text" @bind-Value="Usuario.Correo" placeholder="Ingresa tu usuario" />
+            </label>
+            <label>Contraseña:
+                <InputText class="mt-2"  @bind-Value="Usuario.Password" type="password" placeholder="Ingresa tu contraseña"/>
+            </label>
+            <button class="mt-5 btn btn-negro rounded-4" type="submit">Iniciar sesión</button>
+        </EditForm>
+       
+    </div>      
+</div>
+    
+@code {
+
+    private Usuario Usuario = new();
+    private postResponse Content = new();
+
+
+    private async Task IniciarSesion()
+    {                 
+        var response = await Http.PostAsJsonAsync("Login", Usuario);
+        if (response.IsSuccessStatusCode)
+        {
+            Content = await response.Content.ReadFromJsonAsync<postResponse>() ?? new();
+            if (Content.isSuccess)
+            {
+                Console.WriteLine("Credenciales correctas.");
+                token.SetToken(Content.token);
+                Console.WriteLine(token.Token);
+                Navigation.NavigateTo("/");
+            }                
+        }
+        
+    }
+
+
+
+    partial class postResponse
+    {
+        public string token { get; set; }
+        public bool isSuccess { get; set; } = false;
+    }
+
+}

@@ -1,0 +1,48 @@
+﻿@inject HttpClient Http
+@using System.Net.Http.Json
+
+<select @bind="Valor"
+        @bind:after="onChangeSelect"
+        class="splash-form-select @cssClass">
+    @if (Lista != null)
+    {
+        @foreach (var elemento in Lista)
+        {
+            <option value="@elemento.Id">@elemento.Nombre</option>
+        }
+    }
+</select>
+
+@code {
+    [Parameter]
+    public string cssClass { get; set; } = "";
+    [Parameter]
+    public int Valor { get; set; }    
+    [Parameter]
+    public EventCallback changeEvent { get; set; }
+    [Parameter]
+    public EventCallback<int> ValorChanged { get; set; }
+    [Parameter]
+    public string Tipo { get; set; } = "";
+
+    List<selectObject>? Lista = new(); 
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Http.GetAsync(Tipo);
+        if (response.IsSuccessStatusCode)       
+            Lista = await response.Content.ReadFromJsonAsync<List<selectObject>>() ?? new();
+    }
+
+    private async Task onChangeSelect()
+    {
+        await ValorChanged.InvokeAsync(Valor);
+        await changeEvent.InvokeAsync();
+    }
+
+    public class selectObject
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }        
+    }
+}

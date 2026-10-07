@@ -1,0 +1,207 @@
+﻿@rendermode InteractiveServer
+@page "/Recursos/{Elemento}"
+@inject HttpClient Http
+@inject TokenService Token
+@using System.Net.Http.Json
+@using MonitoreoDashboard.Models
+@using MonitoreoDashboard.Services
+
+<div class="d-flex flex-row">
+    <div class="d-flex flex-column">
+        <h4>Lista de @Elemento</h4>
+        <small>Todos los recursos registrados apareceran aquí</small>
+    </div>
+    <button @onclick="showForm" class="btn-negro" id="btn-new-client">
+            <i class="material-icons">add</i>
+            <span>Añadir</span>
+        </button>
+    
+</div>
+<div class="d-flex gap-3 mt-5 mb-3">
+    <input @bind="nombre"
+           @bind:event="oninput"
+           @bind:after="Consulta"           
+           type="text"
+           placeholder="Buscar" />
+    <Select cssClass="w-25" Tipo="Areas" @bind-Valor="idArea" changeEvent="Consulta" />
+    <Select cssClass="w-25" Tipo="Estados" @bind-Valor="idEstado" changeEvent="Consulta"/>
+</div>
+@if (FormActive)
+{
+    <Splash_form onClose="closeForm">
+        <EditForm Model="Equipo" class="splash-form" id="form">
+            <div class="d-flex flex-row gap-4">
+                <label id="lbl-email" class="mb-3 w-100">
+                    Nombre:
+                    <InputText class="mt-2" type="text" @bind-Value="Equipo.Nombre" placeholder="Ingresa el nombre (Debe ser ùnico)" />
+                </label>
+                <label id="lbl-email" class="mb-3 w-100">
+                    Modelo:
+                    <InputText class="mt-2" type="text" @bind-Value="Equipo.Modelo" placeholder="Ingresa el modelo del equipo" />
+                </label>
+            </div>
+            <div class="d-flex flex-row gap-4">
+                <label id="lbl-email" class="mb-3 w-100">
+                    Planta:
+                    <Select cssClass="mt-2" Tipo="Plantas" @bind-Valor="idPlanta" changeEvent="Consulta">
+                    </Select>
+                </label>
+                <label id="lbl-email" class="mb-3 w-100">
+                    Area:
+                    <InputSelect class="splash-form-select w-100 mt-2" @bind-Value="Equipo.Id_area" type="text" placeholder="Ingresa el área">
+                    </InputSelect>
+                </label>
+            </div>
+
+            <label id="lbl-email" class="mb-3 w-100">
+                Tipo de dispositivo:
+                <Select cssClass="mt-2" Tipo="Tipo_recursos" @bind-Valor="idPlanta" changeEvent="Consulta">
+                </Select>
+            </label>
+            <div class="d-flex flex-row gap-4">
+                <label id="lbl-email" class="mb-3 w-100">
+                    Dirección IP:
+                    <InputText class="mt-2" type="text" @bind-Value="Equipo.Direccion_IP" placeholder="Ingresa la dirección IP" />
+                </label>
+                <label id="lbl-email" class="mb-3 w-100">
+                    Puerto:
+                    <InputNumber class="mt-2"
+                                 type="text"
+                                 @bind-Value="Equipo.Puerto"
+                                 placeholder="Ingresa un puerto" />
+                </label>
+            </div>
+            <label class="mb-3 w-100">
+                Código
+                <InputText class="mt-2" type="text" @bind-Value="Equipo.Codigo" placeholder="Ingresa el código" />
+            </label>
+        </EditForm>
+    </Splash_form>
+}
+
+@if (Loading)
+{
+    <p>Loading...</p>
+}
+else if (Equipos.Count == 0)
+{
+    <NotFoundResults/>
+}
+else
+{
+    <table class="mt-3">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var equipo in Equipos)
+            {
+                <tr>
+                    <td>@equipo.Nombre</td>
+                    <td>@equipo.Area.Nombre</td>
+                    <td>@equipo.Estado.Nombre</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+
+}
+@code 
+{
+    [Parameter]
+    public string Elemento { get; set; } = "";
+
+    string url = "Equipos?";
+
+    private Equipo Equipo = new();
+
+    //Filtros 
+    private int idEstado;
+    private int idTipoRecurso;
+    private int idArea;
+    private int idPlanta;
+    private string nombre = "";
+    private string modelo = "";
+    private int cpu;
+    private int memoria;
+    private int puerto;
+
+    private bool FormActive = false;
+    private bool Loading = false;
+
+    private List<Equipo> Equipos = new();    
+
+    protected override async Task OnInitializedAsync()
+    {
+        switch (Elemento)
+        {
+            case "Computadoras":
+                idTipoRecurso = 3;
+                break;
+            case "PLCs":
+                idTipoRecurso = 4;
+                break;
+            case "Impresoras":
+                idTipoRecurso = 5;
+                break;
+        }
+        await Consulta();
+    }
+
+
+
+    private async Task Consulta()
+    {        
+        Loading = true;
+        var response = await Http.GetAsync(construirURL());
+        if (response.IsSuccessStatusCode)
+            Equipos = await response.Content.ReadFromJsonAsync<List<Equipo>>() ?? new();
+
+        Loading = false;
+    }
+
+    private string construirURL()
+    {
+        url = "Equipos?";
+        if (idEstado != 0)
+            url += "idEstado=" + idEstado+ "&";
+        if (idTipoRecurso != 0)
+            url += "idTipoRecurso=" + idTipoRecurso + "&";
+        if (idArea != 0)
+            url += "idArea=" + idArea + "&";
+        if (idPlanta != 0)
+            url += "idPlanta=" + idPlanta + "&";
+        if (!String.IsNullOrEmpty(nombre))
+            url += "nombre=" + nombre + "&";
+        if (!String.IsNullOrEmpty(modelo))
+            url += "modelo=" + modelo + "&";
+        if (cpu != 0)
+            url += "cpu=" + cpu + "&";
+        if (puerto != 0)
+            url += "puerto=" + puerto + "&";
+
+        url = url[..^1];
+
+        return url;
+    }
+
+    private void closeForm()
+    {
+        FormActive = false;
+    }
+
+    private void showForm()
+    {
+        FormActive = true;
+
+    }
+
+ 
+
+
+}

@@ -55,7 +55,7 @@
 
             <label id="lbl-email" class="mb-3 w-100">
                 Tipo de dispositivo:
-                <Select cssClass="mt-2" Tipo="Tipo_recursos" @bind-Valor="idPlanta" changeEvent="Consulta">
+                <Select cssClass="mt-2" Tipo="Tipo_recursos" @bind-Valor="Equipo.Id_tipo_recurso" changeEvent="Consulta">
                 </Select>
             </label>
             <div class="d-flex flex-row gap-4">
@@ -101,9 +101,22 @@ else
             @foreach (var equipo in Equipos)
             {
                 <tr>
-                    <td>@equipo.Nombre</td>
-                    <td>@equipo.Area.Nombre</td>
-                    <td>@equipo.Estado.Nombre</td>
+                    
+                    <td>
+                        <a class="sidebar-link" Match="NavLinkMatch.All" href="Recursos/Computadoras/@equipo.Id">
+                           @equipo.Nombre
+                        </a>
+                    </td>
+                    <td>
+                        <a class="sidebar-link" Match="NavLinkMatch.All" href="Recursos/Computadoras/@equipo.Id">
+                        @equipo.Area.Nombre
+                        </a>
+                        </td>
+                    <td>
+                        <a class="sidebar-link" Match="NavLinkMatch.All" href="Recursos/Computadoras/@equipo.Id">
+                        @equipo.Estado.Nombre
+                        </a>
+                        </td>
                 </tr>
             }
         </tbody>

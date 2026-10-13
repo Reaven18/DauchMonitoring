@@ -1,10 +1,12 @@
-﻿@using MonitoreoDashboard.Models
-@using MonitoreoDashboard.Services
+﻿@rendermode InteractiveServer
+
+@using MonitoreoDashboard.Models
+@using MonitoreoDashboard.IJSInterop
 @inject HttpClient Http
-@inject TokenService token
+@inject Microsoft.JSInterop.IJSRuntime js
 @inject NavigationManager Navigation
-@rendermode InteractiveServer
 @layout LoginLayout
+
 @page "/login"
 
 
@@ -29,6 +31,7 @@
 
     private Usuario Usuario = new();
     private postResponse Content = new();
+    private string key = "tokenKEY";
 
 
     private async Task IniciarSesion()
@@ -39,9 +42,11 @@
             Content = await response.Content.ReadFromJsonAsync<postResponse>() ?? new();
             if (Content.isSuccess)
             {
-                Console.WriteLine("Credenciales correctas.");
-                token.SetToken(Content.token);
-                Console.WriteLine(token.Token);
+                await js.SentInLocalStorage(key, Content.token);
+                Console.WriteLine("Hola");
+                Console.WriteLine(Content.token);
+                var token = await js.GetFromLocalStorage(key);
+                Console.WriteLine(token);
                 Navigation.NavigateTo("/");
             }                
         }

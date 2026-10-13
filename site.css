@@ -1,3 +1,8 @@
+* {
+    padding:0;
+    margin:0;
+}
+
 html,
 body {
     min-height: 100vh;
@@ -607,3 +612,35 @@ form {
 .rz-donut-series {
    margin-bottom:40px;
 }
+
+.progress-bar {
+    background: #D4DAE1;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 5px;
+}
+.rz-progressbar-determinate.rz-progressbar-primary .rz-progressbar-value
+{
+    background-color: black !important;
+    border-radius: 20px;
+}
+
+.card-description {
+    display: flex;
+    flex-direction: row;
+    color: aliceblue;
+    padding:30px;
+    align-items: center !important;    
+    background: black;
+    border-radius: 20px;
+    gap:40px;
+}
+
+.card-description-text {
+    display: flex;
+    flex-direction: column;   
+}
+
+    .card-description-text p {
+        margin: 0;
+    }

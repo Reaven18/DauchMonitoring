@@ -1,0 +1,34 @@
+﻿@using System.Text.Json
+<div class="d-flex flex-column">
+    <strong style="@strongColor">
+        @Title
+    </strong>
+    <p style="color:@pColor; margin:0">
+        @if (ChildContent != null )
+        {
+            @ChildContent
+        }
+        else
+        {
+            @Error
+        }
+    </p>
+</div>
+@code {
+    [Parameter]
+    public string strongColor { get; set; } = "";
+    [Parameter]
+    public string pColor { get; set; } = "#9ca3af";
+    [Parameter]
+    public string Title { get; set; } = "Titulo";
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    [Parameter]
+    public string Error { get; set; } = "No disponible";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var json = JsonSerializer.Serialize(ChildContent.GetInvocationList().GetValue());
+        Console.WriteLine(json);
+    }
+}
